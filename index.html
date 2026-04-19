@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<title>Dodge 3D Style</title>
+
+<style>
+body {
+  margin: 0;
+  overflow: hidden;
+  background: radial-gradient(circle, #111, #000);
+  font-family: Arial;
+}
+
+/* PLAYER */
+#player {
+  width: 60px;
+  height: 60px;
+  background: linear-gradient(145deg, cyan, blue);
+  position: absolute;
+  bottom: 40px;
+  left: 50%;
+  transform: translateX(-50%);
+  border-radius: 12px;
+  box-shadow: 0 0 20px cyan;
+}
+
+/* ENEMY */
+.enemy {
+  width: 50px;
+  height: 50px;
+  background: linear-gradient(145deg, red, darkred);
+  position: absolute;
+  top: 0;
+  border-radius: 10px;
+  box-shadow: 0 0 15px red;
+}
+
+/* UI */
+#score {
+  position: absolute;
+  top: 15px;
+  left: 15px;
+  color: white;
+  font-size: 22px;
+}
+
+#gameover {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: white;
+  font-size: 40px;
+  display: none;
+}
+
+/* PARTICLE */
+.particle {
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  background: orange;
+  border-radius: 50%;
+}
+</style>
+</head>
+
+<body>
+
+<div id="player"></div>
+<div id="score">Score: 0</div>
+<div id="gameover">GAME OVER</div>
+
+<script>
+const player = document.getElementById("player");
+const scoreText = document.getElementById("score");
+const gameoverText = document.getElementById("gameover");
+
+let playerX = window.innerWidth / 2;
+let score = 0;
+let gameOver = false;
+
+/* SOUND */
+const hitSound = new Audio("https://www.soundjay.com/button/beep-07.wav");
+
+/* CONTROL (keyboard) */
+document.addEventListener("keydown", (e) => {
+  if (gameOver) return;
+
+  if (e.key === "a" || e.key === "ArrowLeft") playerX -= 40;
+  if (e.key === "d" || e.key === "ArrowRight") playerX += 40;
+
+  player.style.left = playerX + "px";
+});
+
+/* CONTROL (touch HP) */
+document.addEventListener("touchmove", (e) => {
+  playerX = e.touches[0].clientX;
+  player.style.left = playerX + "px";
+});
+
+/* PARTICLE EFFECT */
+function explode(x, y) {
+  for (let i = 0; i < 20; i++) {
+    const p = document.createElement("div");
+    p.classList.add("particle");
+    document.body.appendChild(p);
+
+    let px = x;
+    let py = y;
+
+    const angle = Math.random() * 2 * Math.PI;
+    const speed = Math.random() * 5;
+
+    function move() {
+      px += Math.cos(angle) * speed;
+      py += Math.sin(angle) * speed;
+
+      p.style.left = px + "px";
+      p.style.top = py + "px";
+
+      setTimeout(move, 16);
+    }
+    move();
+
+    setTimeout(() => p.remove(), 500);
+  }
+}
+
+/* ENEMY */
+function createEnemy() {
+  if (gameOver) return;
+
+  const enemy = document.createElement("div");
+  enemy.classList.add("enemy");
+
+  enemy.style.left = Math.random() * (window.innerWidth - 50) + "px";
+  document.body.appendChild(enemy);
+
+  let top = 0;
+  const speed = 4 + Math.random() * 4;
+
+  function move() {
+    if (gameOver) return;
+
+    top += speed;
+    enemy.style.top = top + "px";
+
+    const eRect = enemy.getBoundingClientRect();
+    const pRect = player.getBoundingClientRect();
+
+    if (
+      eRect.bottom > pRect.top &&
+      eRect.left < pRect.right &&
+      eRect.right > pRect.left
+    ) {
+      gameOver = true;
+      hitSound.play();
+      explode(pRect.left, pRect.top);
+      gameoverText.style.display = "block";
+
+      setTimeout(() => location.reload(), 2000);
+    }
+
+    if (top < window.innerHeight) {
+      requestAnimationFrame(move);
+    } else {
+      enemy.remove();
+      score++;
+      scoreText.innerText = "Score: " + score;
+    }
+  }
+
+  move();
+}
+
+setInterval(createEnemy, 700);
+</script>
+
+</body>
+</html>
